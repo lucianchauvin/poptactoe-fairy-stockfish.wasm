@@ -256,7 +256,31 @@ constexpr Bitboard shift(Direction D, Bitboard b) {
         : D == SOUTH_EAST ? (b & ~file_bb(FILE_MAX)) >> NORTH_WEST : D == SOUTH_WEST ? (b & ~FileABB) >> NORTH_EAST
         : Bitboard(0);
 }
-
+inline Bitboard shift_wrap(Direction D, Bitboard b) {
+	long long val[8];
+	Bitboard shifted = 0;
+	int h = (D+64)%8;
+	for(int ii = 0; ii < 8; ii++)
+	{
+		val[ii] = (b >> 8*ii) % (1 << 8);
+		val[ii] = ((val[ii] << h) | (val[ii] >> (8-h))) % (1<<8);
+	}
+	for(int ii = 0; ii < 8; ii++)
+	{
+		shifted |= val[(ii - D/6 + 8)%8] << 8*ii;
+	}
+	return shifted;
+}
+constexpr Square shift_wrap(Direction D, Square s, int dist)
+{
+	int sx = s/8;
+	int sy = s%8;
+	int dy = ((D+16)%8);
+	int dx = D/7;
+	sx = (sx + dx*dist + 8)%8;
+	sy = (sy + dy*dist + 8)%8;
+	return Square(8*sx + sy);
+}
 
 /// pawn_attacks_bb() returns the squares attacked by pawns of the given color
 /// from the squares in the given bitboard.

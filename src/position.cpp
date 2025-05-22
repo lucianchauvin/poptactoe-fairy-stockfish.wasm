@@ -47,6 +47,20 @@ namespace Zobrist {
   Key wall[SQUARE_NB];
   Key endgame[EG_EVAL_NB];
 }
+//void Position::drop_piece(Piece pc_hand, Piece pc_drop, Square s) {
+//  assert(can_drop(color_of(pc_hand), type_of(pc_hand)) || var->twoBoards);
+//  put_piece(pc_drop, s, pc_drop != pc_hand, pc_drop != pc_hand ? pc_hand : NO_PIECE);
+//  remove_from_hand(pc_hand);
+//  virtualPieces += (pieceCountInHand[color_of(pc_hand)][type_of(pc_hand)] < 0);
+//  ////try to pop pieces
+//  //for (const Direction& D : getConnectDirections())
+//  //{
+//  //    Square adj = shift_wrap(D,s,1);
+//  //    Square nex = shift_wrap(D,s,2);
+//  //    if((adj & board_bb()) && !(nex & board_bb()))
+//  //  	  move_piece(adj,nex);
+//  //}
+//}
 
 
 /// operator<<(Position) returns an ASCII representation of the position
@@ -1535,6 +1549,7 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 
   assert(is_ok(m));
   assert(&newSt != st);
+  //std::cout << "do move " << m << '\n';
 
 #ifndef NO_THREADS
   thisThread->nodes.fetch_add(1, std::memory_order_relaxed);
@@ -1760,7 +1775,23 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
           dp.to[0] = to;
       }
 
+	  std::memset(st->unpromotedBycatch, 0, sizeof(st->unpromotedBycatch));
       drop_piece(make_piece(us, in_hand_piece_type(m)), pc, to);
+	  //try to pop pieces
+	  for (const Direction& D : POP_DIRECTIONS)
+	  {
+		  Square adj = shift_wrap(D,to,1);
+		  Square nex = shift_wrap(D,to,2);
+		  if((adj & pieces()) && !(nex & pieces()))
+		  {
+			  Piece popped = piece_on(adj);
+			  st->unpromotedBycatch[nex] = popped;
+			  //std::cout << "popping " << adj << " to " << nex << '\n';
+			  //std::cout << " post-pop:" << fen() << '\n';
+			  move_piece(adj,nex);
+		  }
+	  }
+
       st->materialKey ^= Zobrist::psq[pc][pieceCount[pc]-1];
       if (type_of(pc) != PAWN)
           st->nonPawnMaterial[us] += PieceValue[MG][pc];
@@ -2131,13 +2162,14 @@ void Position::do_move(Move m, StateInfo& newSt, bool givesCheck) {
 void Position::undo_move(Move m) {
 
   assert(is_ok(m));
+  //std::cout << "undo move " << m << '\n';
 
   sideToMove = ~sideToMove;
 
   Color us = sideToMove;
   Square from = from_sq(m);
   Square to = to_sq(m);
-  Piece pc = piece_on(to);
+  //Piece pc = piece_on(to);
 
   assert(type_of(m) == DROP || empty(from) || type_of(m) == CASTLING || is_gating(m)
          || (type_of(m) == PROMOTION && sittuyin_promotion())
@@ -2148,6 +2180,7 @@ void Position::undo_move(Move m) {
   byTypeBB[ALL_PIECES] ^= st->wallSquares ^ st->previous->wallSquares;
 
   // Add the blast pieces
+  /*
   if (st->capturedPiece && (blast_on_capture() || var->petrifyOnCaptureTypes))
   {
       Bitboard blast = attacks_bb<KING>(to) | to;
@@ -2215,8 +2248,26 @@ void Position::undo_move(Move m) {
   }
   else
   {
+  */
       if (type_of(m) == DROP)
+	  {
+		  //std::cout << "undropping move " << m << '\n';
           undrop_piece(make_piece(us, in_hand_piece_type(m)), to); // Remove the dropped piece
+			//TODO worked here
+		    // try to unpop pieces
+		  for (const Direction& D : POP_DIRECTIONS)
+		  {
+			  Square adj = shift_wrap(D,to,1);
+			  Square nex = shift_wrap(D,to,2);
+			  if(st->unpromotedBycatch[nex] != NO_PIECE)
+			  {
+				  move_piece(nex,adj);
+				  //std::cout << "unpop from " << nex << " to " << adj << '\n';
+				  //std::cout << "new fen: " << fen() << '\n';
+			  }
+		  }
+
+	  }
       else
           move_piece(to, from); // Put the piece back at the source square
 
@@ -2239,7 +2290,7 @@ void Position::undo_move(Move m) {
                                                                                                    : make_piece(~color_of(st->capturedPiece), promotion_pawn_type(us)))
                                                                     : ~st->capturedPiece);
       }
-  }
+  //}
 
   if (flip_enclosed_pieces())
   {
@@ -2822,7 +2873,7 @@ bool Position::is_immediate_game_end(Value& result, int ply) const {
       {
           b = connectPieces;
           for (int i = 1; i < connect_n() && b; i++)
-              b &= shift(d, b);
+              b &= shift_wrap(d, b);
           if (b)
           {
               result = convert_mate_value(-var->connectValue, ply);

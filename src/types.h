@@ -542,6 +542,7 @@ enum Direction : int {
   SOUTH_WEST = SOUTH + WEST,
   NORTH_WEST = NORTH + WEST
 };
+constexpr Direction POP_DIRECTIONS[8] = {EAST,NORTH_EAST,NORTH,NORTH_WEST,WEST,SOUTH_WEST,SOUTH,SOUTH_EAST};
 
 enum File : int {
 #ifdef LARGEBOARDS

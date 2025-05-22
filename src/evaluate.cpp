@@ -1309,21 +1309,21 @@ namespace {
         {
             // Find sufficiently large gaps
             Bitboard b = pos.board_bb() & ~pos.pieces(Them);
-            for (int i = 1; i < pos.connect_n(); i++)
-                b &= shift(d, b);
+            //for (int i = 1; i < pos.connect_n(); i++)
+            //    b &= shift(d, b);
             // Count number of pieces per gap
+			//TODO
             while (b)
             {
                 Square s = pop_lsb(b);
                 int c = 0;
                 for (int j = 0; j < pos.connect_n(); j++)
-                    if (connectPiecesUs & (s - j * d))
+                    if (connectPiecesUs & shift_wrap(d,s,j))//shift_wrap is new, may be buggy
                         c++;
-                score += make_score(200, 200)  * c / (pos.connect_n() - c) / (pos.connect_n() - c);
+                score += make_score(200, 200)  * c / (pos.connect_n() - c+1) / (pos.connect_n() - c+1);
             }
         }
     }
-
     // Potential piece flips (Reversi)
     if (pos.flip_enclosed_pieces())
     {

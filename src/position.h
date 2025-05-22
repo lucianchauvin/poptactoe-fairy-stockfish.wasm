@@ -1568,6 +1568,14 @@ inline void Position::drop_piece(Piece pc_hand, Piece pc_drop, Square s) {
   put_piece(pc_drop, s, pc_drop != pc_hand, pc_drop != pc_hand ? pc_hand : NO_PIECE);
   remove_from_hand(pc_hand);
   virtualPieces += (pieceCountInHand[color_of(pc_hand)][type_of(pc_hand)] < 0);
+  ////try to pop pieces
+  //for (const Direction& D : getConnectDirections())
+  //{
+  //    Square adj = shift_wrap(D,s,1);
+  //    Square nex = shift_wrap(D,s,2);
+  //    if((adj & board_bb()) && !(nex & board_bb()))
+  //  	  move_piece(adj,nex);
+  //}
 }
 
 inline void Position::undrop_piece(Piece pc_hand, Square s) {

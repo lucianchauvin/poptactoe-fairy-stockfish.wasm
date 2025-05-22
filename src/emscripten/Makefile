@@ -7,7 +7,7 @@ bits = 64
 
 # Build options
 wasm_simd = yes
-embedded_nnue = yes
+embedded_nnue = no
 minify_js = yes
 assertion = no
 
@@ -41,11 +41,7 @@ ifeq ($(wasm_simd),yes)
 	SRCS += emscripten/wasm_simd.cpp
 endif
 
-ifeq ($(embedded_nnue),yes)
-	SRCS += emscripten/embedded_nnue.cpp
-else
-	EM_CXXFLAGS += -DNNUE_EMBEDDING_OFF
-endif
+EM_CXXFLAGS += -DNNUE_EMBEDDING_OFF
 
 EM_COMMIT = $(shell git rev-parse --short HEAD)
 EM_UPSTREAM = $(shell git rev-parse --short $$(git merge-base HEAD upstream/master))
@@ -60,15 +56,8 @@ EXTRALDFLAGS += $(EM_LDFLAGS)
 
 EM_ARTIFACTS += \
 	stockfish.js stockfish.wasm stockfish.worker.js \
-	emscripten/embedded_nnue.cpp \
 	emscripten/public/stockfish.js emscripten/public/stockfish.wasm emscripten/public/stockfish.worker.js \
 	emscripten/public/AUTHORS emscripten/public/Copying.txt
-
-ifeq ($(embedded_nnue),yes)
-emscripten/embedded_nnue.cpp: net
-	@echo "-- Generate embedded_nnue.cpp --"
-	node emscripten/misc/embedded_nnue.js < $(nnuenet) > emscripten/embedded_nnue.cpp
-endif
 
 emscripten_copy_files:
 	cp -f ../AUTHORS ../Copying.txt stockfish.js stockfish.wasm emscripten/public

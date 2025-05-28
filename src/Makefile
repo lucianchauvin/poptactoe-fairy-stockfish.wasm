@@ -94,8 +94,8 @@ endif
 
 
 ### 2.1. General and architecture defaults
-largeboards = yes
-all = yes
+largeboards = no
+all = no
 precomputedmagics = yes
 nnue = no
 load_net = $(if $(filter $(nnue),yes),net)

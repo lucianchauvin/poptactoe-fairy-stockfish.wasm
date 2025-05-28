@@ -6,7 +6,7 @@ arch = wasm
 bits = 64
 
 # Build options
-wasm_simd = yes
+wasm_simd = no
 embedded_nnue = no
 minify_js = yes
 assertion = no
